@@ -1,0 +1,5 @@
+met{hi}=[
+  input{name="What's your name? "}
+  print{"Hi "%name}
+]
+hi
