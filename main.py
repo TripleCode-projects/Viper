@@ -38,6 +38,34 @@ def text(txt):
           return True
         else:
           return False
+      elif t.find("<") != -1:
+        lhs = t[:t.find("<")].strip()
+        rhs = t[t.find("<") + 1:].strip()
+        if float(text(lhs)) < float(text(rhs)):
+          return True
+        else:
+          return False
+      elif t.find(">") != -1:
+        lhs = t[:t.find(">")].strip()
+        rhs = t[t.find(">") + 1:].strip()
+        if float(text(lhs)) > float(text(rhs)):
+          return True
+        else:
+          return False
+      elif t.find("<=") != -1:
+        lhs = t[:t.find("<=")].strip()
+        rhs = t[t.find("<=") + 2:].strip()
+        if float(text(lhs)) <= float(text(rhs)):
+          return True
+        else:
+          return False
+      elif t.find(">=") != -1:
+        lhs = t[:t.find(">=")].strip()
+        rhs = t[t.find(">=") + 2:].strip()
+        if float(text(lhs)) >= float(text(rhs)):
+          return True
+        else:
+          return False
       else:
         _expr = txt[1:-1]
         for _sign in ["-", "+", "*", "/", "%", "^"]:
@@ -50,7 +78,7 @@ def text(txt):
             elif _sign == '*':
               return int(text(lhs))*int(text(rhs))
             elif _sign == '+':
-                return int(text(lhs))+int(text(rhs))
+              return int(text(lhs))+int(text(rhs))
             elif _sign == '-':
               return int(text(lhs))-int(text(rhs))
             elif _sign == '#':
@@ -63,20 +91,45 @@ def text(txt):
       for te in tex:
         tt.append(text(te.strip()))
       return tt
+    elif t[0] == "{" and t[-1] == "}":
+      tex = t[1:-1].split(",")
+      tt = {}
+      for te in tex:
+        p1 = te[:te.find(":")].strip()
+        p2 = te[te.find(":") + 1:].strip()
+        tt[text(p1)] = text(p2)
+      return tt
     elif t[0] != "[" and t[-1] == "]":
       var = variables[t[:t.find("[")]]
-      end.append(var[int(t[t.find("[") + 1:-1])])
+      end.append(var[text(t[t.find("[") + 1:-1])])
+    elif t[:4] == "gen{" and t[-1] == "}":
+      num = text(t[4:-1])
+      tt = []
+      for n in range(1, num):
+        tt.append(n)
+      tt.append(num)
+      return tt
     else:
-      try:
-        end.append(str(variables[t]))
-      except ValueError:
-        print("\033[91m The type is incorrect \033[92m")
-        return ''
-      except KeyError:
+      if t in variables:
+        try:
+          if type(variables[t]) == list:
+            return list(variables[t])
+          elif type(variables[t]) == bool:
+            return bool(variables[t])
+          elif type(variables[t]) == int:
+            return int(variables[t])
+          elif type(variables[t]) == float:
+            return float(variables[t])
+          elif type(variables[t]) == dict:
+            return dict(variables[t])
+          else:
+            end.append(variables[t])
+        except ValueError:
+          print("\033[91m The type is incorrect \033[92m")
+          return ''
+      else:
         print("\033[91m Variable " + txt + " does not exist \033[92m")
         return ''
-      except TypeError:
-        end.append(variables[t])
   try:
     end = "".join(tuple(end))
   except:
@@ -93,9 +146,9 @@ def main(cmd):
   if cmd[:6] == "print{" and cmd[-1] == "}":
     print(text(cmd[6:-1]))
   elif cmd[:4] == "var{" and cmd[-1] == "}":
-    variables[cmd[4:cmd.find("=")]] = text(cmd[cmd.find("=") + 1:-1])
+    variables[cmd[4:cmd.find("=")].strip()] = text(cmd[cmd.find("=") + 1:-1])
   elif cmd[:6] == "input{" and cmd[-1] == "}":
-    variables[cmd[6:cmd.find("=")]] = input(text(cmd[cmd.find("=") + 1:-1]))
+    variables[cmd[6:cmd.find("=")].strip()] = input(text(cmd[cmd.find("=") + 1:-1]))
   elif cmd[:7] == "import{" and cmd[-1] == "}":
     try:
       lines = open(text(cmd[7:-1]) + ".vp")
@@ -106,8 +159,7 @@ def main(cmd):
       print("\033[91m Library" + text(cmd[7:-1]) + " does not exist \033[92m")
   elif cmd in functions:
     code = functions[cmd]
-    for line in code:
-        main(line)
+    execut(code)
   elif cmd[:3] == ">>>":
     pass
   elif cmd == "":
@@ -143,8 +195,33 @@ def execut(lines):
           else:
             code.append(dcmd)
         if bool(text(cond)):
-          for line in code:
-            main(line)
+          execut(code)
+      elif cmd[:4] == "for{" and cmd.find("}in{") and cmd[-3:] == "}=[":
+        loop = cmd[4:cmd.find("}in{")]
+        varb = cmd[cmd.find("}in{") + 4:-3]
+        code = []
+        while True:
+          l = l + 1
+          dcmd = lines[l].lstrip()
+          if dcmd == "]":
+            break
+          else:
+            code.append(dcmd)
+        for lp in text(varb):
+          variables[loop] = lp
+          execut(code)
+      elif cmd[:6] == "while{" and cmd.find("}in{") and cmd[-3:] == "}=[":
+        cond = cmd[6:-3]
+        code = []
+        while True:
+          l = l + 1
+          dcmd = lines[l].lstrip()
+          if dcmd == "]":
+            break
+          else:
+            code.append(dcmd)
+        while bool(text(cond)):
+          execut(code)
       else:
         main(cmd)
       l = l + 1
@@ -159,13 +236,12 @@ def viper():
     if cmd[:6] == "print{" and cmd[-1] == "}":
       print(text(cmd[6:-1]))
     elif cmd[:4] == "var{" and cmd[-1] == "}":
-      variables[cmd[4:cmd.find("=")]] = text(cmd[cmd.find("=") + 1:-1])
+      variables[cmd[4:cmd.find("=")].strip()] = text(cmd[cmd.find("=") + 1:-1])
     elif cmd[:6] == "input{" and cmd[-1] == "}":
-      variables[cmd[6:cmd.find("=")]] = input(text(cmd[cmd.find("=") + 1:-1]))
+      variables[cmd[6:cmd.find("=")].strip()] = input(text(cmd[cmd.find("=") + 1:-1]))
     elif cmd in functions:
       code = functions[cmd]
-      for line in code:
-        main(line)
+      execut(code)
     elif cmd[:7] == "import{" and cmd[-1] == "}":
       try:
         lines = open(text(cmd[7:-1]) + ".vp")
@@ -194,8 +270,31 @@ def viper():
         else:
           code.append(dcmd)
       if bool(text(cond)):
-        for line in code:
-          main(line)
+        execut(code)
+    elif cmd[:4] == "for{" and cmd.find("}in{") and cmd[-3:] == "}=[":
+      loop = cmd[4:cmd.find("}in{")]
+      varb = cmd[cmd.find("}in{") + 4:-3]
+      code = []
+      while True:
+        dcmd = input("\033[92m ---) ").lstrip()
+        if dcmd == "]":
+          break
+        else:
+          code.append(dcmd)
+      for lp in text(varb):
+        variables[loop] = lp
+        execut(code)
+    elif cmd[:6] == "while{" and cmd.find("}in{") and cmd[-3:] == "}=[":
+      cond = cmd[6:-3]
+      code = []
+      while True:
+        dcmd = input("\033[92m ---) ").lstrip()
+        if dcmd == "]":
+          break
+        else:
+          code.append(dcmd)
+      while bool(text(cond)):
+        execut(code)
     elif cmd[:3] == ">>>":
       pass
     elif cmd == "":
