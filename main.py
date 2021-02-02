@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys
+import sys, os
 
 variables = {}
 functions = {}
@@ -160,6 +160,8 @@ def main(cmd):
   elif cmd in functions:
     code = functions[cmd]
     execut(code)
+  elif cmd[:4] == "cmd{" and cmd[-1] == "}":
+    os.system(text(cmd[4:-1]))
   elif cmd[:3] == ">>>":
     pass
   elif cmd == "":
@@ -295,6 +297,8 @@ def viper():
           code.append(dcmd)
       while bool(text(cond)):
         execut(code)
+    elif cmd[:4] == "cmd{" and cmd[-1] == "}":
+      os.system(text(cmd[4:-1]))
     elif cmd[:3] == ">>>":
       pass
     elif cmd == "":
