@@ -1,0 +1,9 @@
+met{hi}=[
+  input{name="What's your name? "}
+  print{"Hi "%name}
+]
+met{hello}=[
+  input{name="What's your name? "}
+  print{"Hello "%name}
+]
+var{greetings=["Hi", "Bye", "Hello", "Goodbye"]}
